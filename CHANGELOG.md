@@ -43,6 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `xerj mcp`: a proxied tool call whose response body cannot be read in
+  full (the connection drops partway, or the request deadline fires
+  mid-body) is now an error that names the URL and the cause. It used to
+  come back as an empty *successful* result, which reads as "no matches".
+
 - `SpawnedThread` is `Send` and `Sync` on musl. `libc::pthread_t` is
   `*mut c_void` there and an integer on glibc, so the handle was `!Send`
   only on musl. `MemoryShardRpc::call` holds it across `.await`, and
