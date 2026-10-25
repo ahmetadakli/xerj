@@ -53,6 +53,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   batch is still answered one line per request
   ([#2390](https://github.com/xerj-org/xerj/issues/2390)).
 
+- MCP calls to a loopback node (`127.0.0.1`, `localhost`, `::1`) no longer
+  follow `ALL_PROXY`, `HTTP_PROXY`, or `HTTPS_PROXY`. reqwest sends those
+  addresses through the proxy unless the client opts out, so a socks or HTTP
+  proxy in the environment answered HTTP 503 while the node was healthy and
+  `curl --noproxy` reached it. `xerj autoindex`, `xerj search`, `xerj def`,
+  and the other commands that share the node HTTP client skip the proxy for
+  the same hosts. A non-loopback URL still uses the process proxy, including
+  `NO_PROXY`. When a proxy is used and returns HTTP 502, 503, or 504, or the
+  connection to it fails, the tool error names the proxy (`request to …
+  went through proxy http://…, which returned HTTP 503`) instead of
+  `XERJ returned HTTP 503`
+  ([#2379](https://github.com/xerj-org/xerj/issues/2379)).
+
+- `xerj mcp`: `xerj_code_search` now gives up on a node that does not
+  answer. Its requests went through a fresh HTTP client without the 30 s
+  deadline every other tool uses, so a node that accepted the connection
+  and then stalled held the call forever, and with it every later request
+  on the stdio connection. The call now fails with an error after 30 s,
+  like the other tools.
+
 - `SpawnedThread` is `Send` and `Sync` on musl. `libc::pthread_t` is
   `*mut c_void` there and an integer on glibc, so the handle was `!Send`
   only on musl. `MemoryShardRpc::call` holds it across `.await`, and
